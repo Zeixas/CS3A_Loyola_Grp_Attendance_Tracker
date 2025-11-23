@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # FIXED: Pinned to 22.04 for stability
 
     steps:
       - name: Checkout code
@@ -46,7 +46,8 @@ jobs:
             libssl-dev \
             autoconf \
             libtool \
-            pkg-config
+            pkg-config \
+            openjdk-17-jdk
 
       - name: Install Buildozer
         run: |
@@ -65,7 +66,6 @@ jobs:
 
       - name: Build with Buildozer
         run: |
-          # The 'yes' command automatically accepts the license agreement
           yes | buildozer android debug
 
       - name: Upload APK
