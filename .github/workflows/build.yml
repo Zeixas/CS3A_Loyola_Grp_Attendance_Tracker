@@ -19,6 +19,7 @@ jobs:
         with:
           python-version: '3.9'
 
+      # FIXED: Added autopoint and libunwind-dev to fix common build errors
       - name: Install Buildozer dependencies
         run: |
           sudo apt-get update
@@ -48,22 +49,27 @@ jobs:
             autoconf \
             libtool \
             pkg-config \
-            openjdk-17-jdk
+            openjdk-17-jdk \
+            autopoint
 
       - name: Install Buildozer
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
-      - name: Init Buildozer (if spec missing)
+      # FIXED: Forces a fresh config file every time to prevent errors
+      - name: Init Buildozer
         run: |
-          if [ ! -f buildozer.spec ]; then
-            buildozer init
-            # Edit spec for NFC
-            sed -i 's/requirements = python3,kivy/requirements = python3,kivy,android,jnius/' buildozer.spec
-            sed -i 's/android.permissions = INTERNET/android.permissions = NFC/' buildozer.spec
-            sed -i 's/android.api = 27/android.api = 33/' buildozer.spec
-          fi
+          rm -f buildozer.spec
+          buildozer init
+          
+          # Use aggressive replacements to ensure settings stick
+          sed -i 's/^requirements =.*/requirements = python3,kivy,android,jnius/' buildozer.spec
+          sed -i 's/^android.permissions =.*/android.permissions = NFC/' buildozer.spec
+          sed -i 's/^android.api =.*/android.api = 33/' buildozer.spec
+          
+          # Verify the changes (prints to log)
+          cat buildozer.spec | grep "permissions"
 
       - name: Build with Buildozer
         run: |
