@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04  # FIXED: Pinned to 22.04 for stability
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout code
@@ -38,9 +38,10 @@ jobs:
             libavformat-dev \
             libavcodec-dev \
             zlib1g-dev \
-            libgstreamer1.0 \
+            libgstreamer1.0-dev \
             gstreamer1.0-plugins-base \
             gstreamer1.0-plugins-good \
+            libunwind-dev \
             libltdl-dev \
             libffi-dev \
             libssl-dev \
