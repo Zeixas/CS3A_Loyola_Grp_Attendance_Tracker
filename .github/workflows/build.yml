@@ -41,7 +41,7 @@ jobs:
       # 3. Build using the official Kivy Docker image
       # This downloads a Linux system that is GUARANTEED to have the right libraries.
       - name: Build with Docker
-        uses: ArtemSBulgakov/buildozer-action-v1@release/v1
+        uses: ArtemSBulgakov/buildozer-action@v1
         with:
           command: buildozer android debug
           buildozer_version: stable
