@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build (Docker Method)
 
 on:
   push:
@@ -8,72 +8,43 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # 1. Free up disk space (Critical for Android builds)
+      - name: Free Disk Space
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo apt-get clean
 
-      - name: Set up Python
+      - uses: actions/checkout@v4
+
+      # 2. Prepare the config file using Python
+      - name: Setup Config
         uses: actions/setup-python@v4
         with:
           python-version: '3.9'
-
-      # FIXED: Added autopoint and libunwind-dev to fix common build errors
-      - name: Install Buildozer dependencies
+      
+      - name: Create buildozer.spec
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip \
-            build-essential \
-            git \
-            python3 \
-            python3-dev \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            zlib1g-dev \
-            libgstreamer1.0-dev \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good \
-            libunwind-dev \
-            libltdl-dev \
-            libffi-dev \
-            libssl-dev \
-            autoconf \
-            libtool \
-            pkg-config \
-            openjdk-17-jdk \
-            autopoint
-
-      - name: Install Buildozer
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33
-
-      # FIXED: Forces a fresh config file every time to prevent errors
-      - name: Init Buildozer
-        run: |
-          rm -f buildozer.spec
+          pip install buildozer
+          # Create default spec
           buildozer init
-          
-          # Use aggressive replacements to ensure settings stick
-          sed -i 's/^requirements =.*/requirements = python3,kivy,android,jnius/' buildozer.spec
-          sed -i 's/^android.permissions =.*/android.permissions = NFC/' buildozer.spec
-          sed -i 's/^android.api =.*/android.api = 33/' buildozer.spec
-          
-          # Verify the changes (prints to log)
-          cat buildozer.spec | grep "permissions"
+          # Edit spec for NFC and correct API version
+          sed -i 's/requirements = python3,kivy/requirements = python3,kivy,android,jnius/' buildozer.spec
+          sed -i 's/android.permissions = INTERNET/android.permissions = NFC/' buildozer.spec
+          sed -i 's/android.api = 27/android.api = 33/' buildozer.spec
+          # OPTIONAL: Build only for ARM64 to save time/space (works on 99% of modern phones)
+          sed -i 's/# android.archs = arm64-v8a, armeabi-v7a/android.archs = arm64-v8a/' buildozer.spec
 
-      - name: Build with Buildozer
-        run: |
-          yes | buildozer android debug
+      # 3. Build using the official Kivy Docker image
+      # This downloads a Linux system that is GUARANTEED to have the right libraries.
+      - name: Build with Docker
+        uses: ArtemSBulgakov/buildozer-action-v1@release/v1
+        with:
+          command: buildozer android debug
+          buildozer_version: stable
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
